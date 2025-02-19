@@ -1,57 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Chatbot in PHP</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-</head>
-<body>
-    <div class="wrapper">
-        <div class="title">Online Chatbot</div>
-        <div class="form">
-            <div class="bot-inbox inbox">
-                <div class="icon">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="msg-header">
-                    <p>Xin chào, tôi có thể giúp gì cho bạn?</p>
-                </div>
-            </div>
-        </div>
-        <div class="typing-field">
-            <div class="input-data">
-                <input id="data" type="text" placeholder="Type something here.." required>
-                <button id="send-btn">Send</button>
-            </div>
-        </div>
-    </div>
+<?php
+$api_key = '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';
+$api_url = 'https://api.openai.com/v1/chat/completions';
 
-    <script>
-        $(document).ready(function(){
-            $("#send-btn").on("click", function(){
-                $value = $("#data").val();
-                $msg = '<div class="user-inbox inbox"><div class="msg-header"><p>'+ $value +'</p></div></div>';
-                $(".form").append($msg);
-                $("#data").val('');
-                
-                // start ajax code
-                $.ajax({
-                    url: 'message.php',
-                    type: 'POST',
-                    data: 'text='+$value,
-                    success: function(result){
-                        $replay = '<div class="bot-inbox inbox"><div class="icon"><i class="fas fa-user"></i></div><div class="msg-header"><p>'+ result +'</p></div></div>';
-                        $(".form").append($replay);
-                        // when chat goes down the scroll bar automatically comes to the bottom
-                        $(".form").scrollTop($(".form")[0].scrollHeight);
-                    }
-                });
-            });
-        });
-    </script>
-    
-</body>
-</html>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $userMessage = strtolower(trim($_POST['text']));
+
+    $data = [
+        'model' => 'gpt-3.5-turbo',
+        'messages' => [
+            ["role" => "system", "content" => "Bạn là nhân viên tư vấn chuyên nghiệp của shop trang sức HuyThanhJewelry. Hãy trả lời khách hàng một cách thân thiện và chuyên nghiệp, nhưng không vượt quá 218 ký tự."],
+            ["role" => "user", "content" => $userMessage]
+        ],
+        'max_tokens' => 150
+    ];
+
+    $ch = curl_init($api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $api_key
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $result = json_decode($response, true);
+
+    if (isset($result['choices'][0]['message']['content'])) {
+        echo $result['choices'][0]['message']['content'];
+    } else {
+        echo "Xin lỗi, tôi chưa hiểu ý bạn. Bạn muốn tìm hiểu sản phẩm nào ạ?";
+    }
+    exit;
+}
+?>
